@@ -1,0 +1,59 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+### Project Requirements Summary
+
+- **Purpose**: Build a Flask application (Model Context Protocol, MCP) integrated with a PostgreSQL database and a Large Language Model (LLM).
+- **Database**: Use PostgreSQL with dynamic schema reflection (no hardcoded models).
+- **LLM Integration**: Connect to an LLM (e.g., Grok) to provide database context for reasoning.
+- **API**: 
+  - RESTful endpoints for basic CRUD operations.
+  - Server-Sent Events (SSE) endpoint to stream LLM responses with database context.
+- **Dynamic Models**: Reflect database schema at runtime to adapt to changes.
+- **Environment**: Use `.env` for configuration (DB credentials, LLM API key).
+- **Tools**: Flask, SQLAlchemy, Flask-Migrate, LLM API client, SSE support.
+
+---
+
+### Project Structure Summary
+
+```
+my_flask_app/
+├── app/                  # Core application package
+│   ├── __init__.py       # Initializes Flask, DB, and routes
+│   ├── config.py         # Configuration (DB URI, LLM keys)
+│   ├── models/           # Dynamic model handling
+│   │   ├── __init__.py   # Empty
+│   │   └── dynamic.py    # Reflects DB schema dynamically
+│   ├── routes/           # API endpoints
+│   │   ├── __init__.py   # Empty
+│   │   ├── api.py        # RESTful CRUD endpoints
+│   │   └── sse.py        # SSE endpoint for LLM streaming
+│   ├── llm/              # LLM integration
+│   │   ├── __init__.py   # Empty
+│   │   └── llm_client.py # LLM API client
+│   └── utils/            # Helper functions
+│       ├── __init__.py   # Empty
+│       └── db_utils.py   # Extracts DB context for LLM
+├── migrations/           # DB migration files (auto-generated)
+├── tests/                # Unit tests
+│   ├── __init__.py      # Empty
+│   └── test_sse.py       # Tests for SSE and LLM
+├── .env                  # Environment variables (DB, LLM keys)
+├── .gitignore            # Ignores pycache, env, etc.
+├── requirements.txt      # Lists dependencies
+├── run.py                # App entry point
+└── README.md             # Project docs
+```
+
+---
+
+### Key Details for Cursor AI
+
+- **Dependencies**: `flask`, `flask-sqlalchemy`, `flask-migrate`, `psycopg2-binary`, `python-dotenv`, `requests`, `sseclient-py`.
+- **Dynamic Schema**: Use `app/models/dynamic.py` with `MetaData.reflect()` to fetch DB schema.
+- **LLM Context**: `app/utils/db_utils.py` generates text description of schema for LLM.
+- **SSE Streaming**: `app/routes/sse.py` streams LLM responses with `text/event-stream`.
+- **Run Command**: `python run.py` after setting up DB and `.env`.
