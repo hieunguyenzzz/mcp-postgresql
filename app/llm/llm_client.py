@@ -3,22 +3,31 @@ import requests
 import os
 import sseclient
 from flask import current_app
+from app.llm.model_factory import LLMFactory
 
 class LLMClient:
-    """Client for interacting with Large Language Model APIs."""
+    """
+    Client for interacting with Large Language Models.
+    This class serves as a simple wrapper around the Model Factory.
+    It maintains backward compatibility with existing code while
+    leveraging the new factory pattern for model selection.
+    """
     
     def __init__(self, api_key=None, api_url=None, model=None):
-        """Initialize the LLM client."""
-        self.api_key = api_key or os.environ.get('LLM_API_KEY') or current_app.config.get('LLM_API_KEY')
-        self.api_url = api_url or os.environ.get('LLM_API_URL') or current_app.config.get('LLM_API_URL')
-        self.model = model or os.environ.get('LLM_MODEL') or current_app.config.get('LLM_MODEL')
+        """
+        Initialize the LLM client.
         
-        if not self.api_key:
-            raise ValueError("LLM API key is required")
+        Args:
+            api_key (str, optional): API key for the LLM provider
+            api_url (str, optional): API URL for the LLM provider
+            model (str, optional): Model name to use
+        """
+        self.model_name = model or os.environ.get('LLM_MODEL') or current_app.config.get('LLM_MODEL', 'gpt-3.5-turbo')
+        self.api_key = api_key  # Kept for backward compatibility
+        self.api_url = api_url  # Kept for backward compatibility
         
-        if not self.api_url:
-            # Default to OpenAI-compatible API endpoint
-            self.api_url = "https://api.openai.com/v1/chat/completions"
+        # Create the appropriate client using the factory
+        self.client = LLMFactory.get_llm_client(self.model_name)
     
     def generate_completion(self, prompt, context=None, streaming=False):
         """
@@ -33,43 +42,7 @@ class LLMClient:
             If streaming is False, returns the full response as a string.
             If streaming is True, returns a generator that yields chunks of the response.
         """
-        messages = []
-        
-        # Add system message with context if provided
-        if context:
-            messages.append({
-                "role": "system",
-                "content": f"You are an assistant with access to database information. Use this database context to help answer questions: {context}"
-            })
-        else:
-            messages.append({
-                "role": "system",
-                "content": "You are an assistant that helps answer questions."
-            })
-        
-        # Add user message
-        messages.append({
-            "role": "user",
-            "content": prompt
-        })
-        
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}"
-        }
-        
-        payload = {
-            "model": self.model,
-            "messages": messages,
-            "stream": streaming
-        }
-        
-        if streaming:
-            # Return a generator for streaming responses
-            return self._stream_response(headers, payload)
-        else:
-            # Return the full response for non-streaming
-            return self._get_full_response(headers, payload)
+        return self.client.generate_completion(prompt, context, streaming)
     
     def _get_full_response(self, headers, payload):
         """Get a full response from the LLM API."""
